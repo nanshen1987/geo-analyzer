@@ -20,7 +20,7 @@ import java.io.IOException;
 /**
  * Created by sn on 2017-5-10.
  */
-@SpringBootApplication
+//@SpringBootApplication
 public class Main4Dev implements CommandLineRunner {
     public static void main(String[] args) throws IOException {
         // display a data store file chooser dialog for shapefiles
