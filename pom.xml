@@ -11,6 +11,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <geotools.version>15.1</geotools.version>
+        <solrj.version>6.5.1</solrj.version>
     </properties>
 
 
@@ -55,6 +56,13 @@
             <artifactId>gt-jdbc-postgis</artifactId>
             <version>${geotools.version}</version>
         </dependency>
+        <!-- https://mvnrepository.com/artifact/org.apache.solr/solr-solrj -->
+        <dependency>
+            <groupId>org.apache.solr</groupId>
+            <artifactId>solr-solrj</artifactId>
+            <version>${solrj.version}</version>
+        </dependency>
+
     </dependencies>
 
 

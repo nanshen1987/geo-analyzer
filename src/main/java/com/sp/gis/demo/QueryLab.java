@@ -1,5 +1,11 @@
 package com.sp.gis.demo;
 
+import com.vividsolutions.jts.geom.Geometry;
+import org.apache.solr.client.solrj.SolrClient;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrClient;
+import org.apache.solr.client.solrj.response.UpdateResponse;
+import org.apache.solr.common.SolrInputDocument;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFactorySpi;
 import org.geotools.data.DataStoreFinder;
@@ -9,6 +15,8 @@ import org.geotools.data.shapefile.ShapefileDataStoreFactory;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.filter.text.cql2.CQL;
+import org.geotools.geometry.jts.JTS;
+import org.geotools.referencing.CRS;
 import org.geotools.swing.action.SafeAction;
 import org.geotools.swing.data.JDataStoreWizard;
 import org.geotools.swing.table.FeatureCollectionTableModel;
@@ -19,12 +27,17 @@ import org.opengis.feature.FeatureVisitor;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.type.FeatureType;
 import org.opengis.filter.Filter;
+import org.opengis.geometry.primitive.*;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.operation.MathTransform;
 import org.opengis.util.ProgressListener;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.awt.Point;
 import java.awt.event.ActionEvent;
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -37,7 +50,11 @@ public class QueryLab extends JFrame{
     private JTable table;
     private JTextField text;
 
+    final String urlString = "http://localhost:8983/solr/nanjing";
+    SolrClient solr ;
+
     public QueryLab(){
+        solr = new HttpSolrClient.Builder(urlString).build();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         getContentPane().setLayout(new BorderLayout());
         text=new JTextField(80);
@@ -137,7 +154,31 @@ public class QueryLab extends JFrame{
             @Override
             public void visit(Feature feature) {
                 SimpleFeature simple = (SimpleFeature) feature;
-                System.out.println(simple.getAttribute("name")+":"+simple.getDefaultGeometry());
+                System.out.println(simple.getAttribute("name") + ":" + simple.getDefaultGeometry());
+                SolrInputDocument document = new SolrInputDocument();
+                document.addField("id", simple.getAttribute("osm_id"));
+                document.addField("name", simple.getAttribute("name"));
+
+
+                // Remember to commit your changes!
+                try {
+                    UpdateResponse response = solr.add(document);
+                    solr.commit();
+                    CoordinateReferenceSystem crsSource = CRS.decode("EPSG:3785");
+                    CoordinateReferenceSystem crsTarget = CRS.decode("EPSG:4326");
+                    // 投影转换
+                    MathTransform transform = CRS.findMathTransform(crsSource, crsTarget);
+                    com.vividsolutions.jts.geom.Point pointTarget = ( com.vividsolutions.jts.geom.Point) JTS.transform((Geometry) simple.getDefaultGeometry(), transform);
+
+                    System.out.println(pointTarget);
+                } catch (SolrServerException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                catch (Exception e){
+                    e.printStackTrace();
+                }
             }
         },progressListener);
 
