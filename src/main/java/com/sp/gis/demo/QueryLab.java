@@ -154,7 +154,9 @@ public class QueryLab extends JFrame{
             @Override
             public void visit(Feature feature) {
                 SimpleFeature simple = (SimpleFeature) feature;
-                System.out.println(simple.getAttribute("name") + ":" + simple.getDefaultGeometry());
+                if(simple.getAttribute("name")==null){
+                    return;
+                }
                 SolrInputDocument document = new SolrInputDocument();
                 document.addField("id", simple.getAttribute("osm_id"));
                 document.addField("name", simple.getAttribute("name"));
@@ -162,15 +164,16 @@ public class QueryLab extends JFrame{
 
                 // Remember to commit your changes!
                 try {
-                    UpdateResponse response = solr.add(document);
-                    solr.commit();
-                    CoordinateReferenceSystem crsSource = CRS.decode("EPSG:3785");
+                    CoordinateReferenceSystem crsSource = CRS.decode("EPSG:3857");
                     CoordinateReferenceSystem crsTarget = CRS.decode("EPSG:4326");
                     // 投影转换
                     MathTransform transform = CRS.findMathTransform(crsSource, crsTarget);
                     com.vividsolutions.jts.geom.Point pointTarget = ( com.vividsolutions.jts.geom.Point) JTS.transform((Geometry) simple.getDefaultGeometry(), transform);
 
-                    System.out.println(pointTarget);
+                    document.addField("geom",pointTarget.getX()+","+pointTarget.getY());
+                    System.out.println(simple.getAttribute("name") + ":" + pointTarget.getX() + "," + pointTarget.getY());
+                    UpdateResponse response = solr.add(document);
+
                 } catch (SolrServerException e) {
                     e.printStackTrace();
                 } catch (IOException e) {
@@ -181,6 +184,7 @@ public class QueryLab extends JFrame{
                 }
             }
         },progressListener);
+        solr.commit();
 
 
 //        FeatureCollectionTableModel model = new FeatureCollectionTableModel(features);
